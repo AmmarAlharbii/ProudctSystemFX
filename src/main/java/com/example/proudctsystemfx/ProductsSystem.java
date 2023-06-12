@@ -16,6 +16,9 @@ import javafx.stage.Stage;
 
 
 import java.sql.*;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class ProductsSystem extends Application {
@@ -81,7 +84,7 @@ public class ProductsSystem extends Application {
         typeChoiceBox.getItems().addAll("Tv", "Mobile", "Laptop"); // all available choices
         TextField modelField = new TextField();// model field
         TextField priceField = new TextField();// price field
-        Slider slider = new Slider(1, 10, 0); //Slider for count
+        Slider slider = new Slider(0, 10, 0); //Slider for count
         DatePicker datePicker = new DatePicker();//DatePicker to take date
         Button saveButton = new Button("Save"); //save button
         slider.setShowTickMarks(true);//display tick mark
@@ -108,30 +111,58 @@ public class ProductsSystem extends Application {
         gridPane.add(saveButton, 0, 5);
         gridPane.add(statusMessage, 0, 6);
         // Set a fixed size for the status message label
-        statusMessage.setMinWidth(200);
-        statusMessage.setMaxWidth(200);
+        statusMessage.setMinWidth(300);
+        statusMessage.setMaxWidth(300);
 
         // Set event handler for save button
         saveButton.setOnAction(event -> {
             // Validate input fields
-            if (typeChoiceBox.getValue() == null || modelField.getText().isEmpty() || priceField.getText().isEmpty()
-                    || datePicker.getValue() == null) // check if the feild is empty
-            {
-                statusMessage.setText("Please fill all fields.");//massage will display if is empty
-                statusMessage.setTextFill(Color.RED);// color
-                return;
-            }// if
 
             try {
+                // declare all variables for Validateing
                 float price = Float.parseFloat(priceField.getText());//price assaign
                 int count = (int) slider.getValue();//number of count
+                String type = typeChoiceBox.getValue(); //type
+                String priceText = priceField.getText();//price text for check if empty
+                LocalDate date = datePicker.getValue();// Date
+                String model = modelField.getText();//model
 
+                List<String> fields = new ArrayList<>();// list of empty fields
+
+
+                if (type == null || type.isEmpty()) {//if the field empty will add to the list
+                    fields.add("Type");
+                }
+                if (model.isEmpty()) {
+                    fields.add("Model");
+                }
+                if (priceText.isEmpty()) {
+                    fields.add("Price");
+                }
+                if (date == null) {
+                    fields.add("DeliveryDate");
+                }
+
+                if (!fields.isEmpty()) { //if the list not empty
+                    String errorMessage = "Please fill the following fields: " + String.join(", ", fields);// assign the empty fields in message
+                    statusMessage.setText(errorMessage);
+                    statusMessage.setTextFill(Color.RED);
+                    return;
+                }
                 // Validate price
                 if (price < 1) { // if the price = 0 will display meassage
                     statusMessage.setText("Price should be greater than 0.");
                     statusMessage.setTextFill(Color.RED);
                     return;
                 }
+
+                // Validate count
+                if (count < 1) {
+                    statusMessage.setText("Count should be greater than 0.");
+                    statusMessage.setTextFill(Color.RED);
+                    return;
+                }
+
 
                 // Insert the new product data into the database
                 Connection connection = secureConn.secureConnection();//create Connection
@@ -155,8 +186,8 @@ public class ProductsSystem extends Application {
                 priceField.setText("");
                 slider.setValue(0);
                 datePicker.setValue(null);
-            } catch (NumberFormatException e) { // if the user enter 0 price
-                statusMessage.setText("Please enter a valid price.");
+            } catch (NumberFormatException e) { // if the user dont enter any data
+                statusMessage.setText("Please fill all fields.");
                 statusMessage.setTextFill(Color.RED);
             } catch (SQLException e) { //error while adding
                 e.printStackTrace();
@@ -358,22 +389,30 @@ public class ProductsSystem extends Application {
 
                             statusMessage.setText("Product deleted successfully."); //success message
                             statusMessage.setTextFill(Color.GREEN);
+                            idField.setText(null);
+
                         } catch (SQLException e) {
                             //if there any error in deleteing
+
                             e.printStackTrace();
                             statusMessage.setText("Error occurred while deleting the product.");//error message
                             statusMessage.setTextFill(Color.RED);
                         }
+
                     } else {
                         statusMessage.setText("Deletion canceled.");//canceled message
                         statusMessage.setTextFill(Color.RED);
+
                     }
                 } else {
                     statusMessage.setText("Product ID does not exist.");// if the id doesn't found in the database
                     statusMessage.setTextFill(Color.RED);
+
                 }
+
             }
         });//Event end
+
 
         // Create GridPane and add ID input field and delete button
         GridPane gridPane = new GridPane();
